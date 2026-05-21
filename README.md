@@ -1,6 +1,3 @@
-# GGD-SO101
-Gaze and Gesture Directed SO-101 arm via Reachy Mini
-
 graph TD
     %% Base Styling Definitions
     classDef hostStyle fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:#fff;
