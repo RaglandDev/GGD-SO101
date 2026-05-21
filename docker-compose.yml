@@ -1,0 +1,41 @@
+version '3.8'
+
+services:
+	web_input_bridge:
+		build: ./src/web_bridge
+		ports:
+			- "8080:8080"
+		networks:
+			- shared_autonomy_net
+
+	perception_processor:
+		build: ./src/perception
+		networks:
+			- shared_autonomy_net
+		depends_on: 
+			- web_input_bridge
+
+	simulation_control:
+		build: ./src/simulation
+		ports:
+			- "5000:5000"
+		networks:
+			- shared_autonomy_net
+		deploy:
+		  resources:
+		    reservations:
+		      devices:
+		        - driver: nvidia
+			  count: 1
+			  capabilities: [gpu]
+
+	triage_supervisor:
+		build: ./src/triage
+		networks:
+			- shared_autonomy_net
+		depends_on: 
+			- simulation_control
+
+networks:
+	shared_autonomy_net:
+		driver: bridge
