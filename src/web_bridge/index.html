@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webcam Bridge</title>
+</head>
+<body>
+    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const ws = new WebSocket('ws://localhost:8080/ws');
+
+        // grab webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => console.error("Camera access denied!", err));
+
+        // stream frames
+	const QUALITY = 0.7
+        ws.onopen = () => {
+            setInterval(() => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const frameData = canvas.toDataURL('image/jpeg', QUALITY); 
+                ws.send(frameData);
+            }, 300); // 30 fps
+        };
+    </script>
+</body>
+</html>
