@@ -1,41 +1,47 @@
-version '3.8'
-
-services:
-	web_input_bridge:
-		build: ./src/web_bridge
-		ports:
-			- "8080:8080"
-		networks:
-			- shared_autonomy_net
-
-	perception_processor:
-		build: ./src/perception
-		networks:
-			- shared_autonomy_net
-		depends_on: 
-			- web_input_bridge
-
-	simulation_control:
-		build: ./src/simulation
-		ports:
-			- "5000:5000"
-		networks:
-			- shared_autonomy_net
-		deploy:
-		  resources:
-		    reservations:
-		      devices:
-		        - driver: nvidia
-			  count: 1
-			  capabilities: [gpu]
-
-	triage_supervisor:
-		build: ./src/triage
-		networks:
-			- shared_autonomy_net
-		depends_on: 
-			- simulation_control
+version: '3.8'
 
 networks:
-	shared_autonomy_net:
-		driver: bridge
+  shared_autonomy_net:
+    driver: bridge
+
+services:
+  web_input_bridge:
+    build: 
+      context: ./src/web_bridge
+    ports:
+      - "8080:8080"
+    networks:
+      - shared_autonomy_net
+    volumes:
+      - ./src/web_bridge:/app
+
+  perception_processor:
+    build: 
+      context: ./src/perception
+    networks:
+      - shared_autonomy_net
+    volumes:
+      - ./src/perception:/ros2_ws/src/perception
+    depends_on:
+      - web_input_bridge
+
+  simulation_control:
+    build: 
+      context: ./src/simulation
+    ports:
+      - "1234:1234" # Open for Webots WebGL Streaming
+      - "5000:5000" # Open for Reachy's POV stream loopback
+    networks:
+      - shared_autonomy_net
+    volumes:
+      - ./src/simulation:/ros2_ws/src/simulation
+
+  triage_supervisor:
+    build: 
+      context: ./src/triage
+    networks:
+      - shared_autonomy_net
+    volumes:
+      - ./src/triage:/ros2_ws/src/triage
+    depends_on:
+      - simulation_control
