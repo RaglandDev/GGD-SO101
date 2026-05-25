@@ -3,6 +3,7 @@
 ## Requirements
 - Docker Engine (Linux only) or Docker Desktop
 - A web browser that has webcam and WebSockets support
+- A webcam
 
 ## Usage
 1. `docker compose up --build`
