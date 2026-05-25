@@ -1,7 +1,8 @@
 # Gesture-and-Gaze-Directed SO-101 via Reachy Mini
 
-## Prerequisites
+## Requirements
 - Docker Engine (Linux only) or Docker Desktop
+- A web browser that has webcam and WebSockets support
 
 ## Usage
 1. `docker compose up --build`
