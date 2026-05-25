@@ -14,5 +14,5 @@
 4. `~$ source /opt/ros/humble/setup.bash`
 5. `~$ ros2 topic hz /human/camera/compressed`[^1]
 
-[^1]: Modern browsers will de-allocate resources from non-active tabs, so you may see a large drop in frame rate if you are do not have the webcam tab open.
+[^1]: Modern browsers will de-allocate resources from non-active tabs, so you may see a large drop in frame rate if you do not have the webcam tab open.
 
