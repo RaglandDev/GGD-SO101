@@ -8,33 +8,62 @@
     </style>
 </head>
 <body>
-    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2> 
-    <video id="video" width="640" height="480" autoplay></video> 
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas> 
-	<script> 
-    const video = document.getElementById('video'); 
-    const canvas = document.getElementById('canvas'); 
-    const ctx = canvas.getContext('2d'); 
-    const ws = new WebSocket('ws://localhost:8080/ws'); 
+    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
 
-    navigator.mediaDevices.getUserMedia({ video: true }) 
-        .then(stream => { video.srcObject = stream; }) 
-        .catch(err => console.error("Camera access denied!", err)); 
+    <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const ws = new WebSocket('ws://localhost:8080/ws');
 
-    const QUALITY = 0.7; 
-    // Hardcoded 30ms to account for ~3.5ms context-switching overhead, target 30fps
-    const MILLISECONDS = 30; 
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream; })
+        .catch(err => console.error("Camera access denied!", err));
 
-    ws.onopen = () => { 
-        setInterval(() => { 
-            if (ws.readyState === WebSocket.OPEN && ws.bufferedAmount === 0) { 
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-                canvas.toBlob((blob) => { 
-                    if (blob) ws.send(blob); 
-                }, 'image/jpeg', QUALITY); 
+    const QUALITY = 0.7;
+
+    // Target FPS
+    const TARGET_FPS = 30;
+    const TARGET_FRAME_TIME = 1000 / TARGET_FPS;
+
+    let nextFrameTime = performance.now();
+
+    ws.onopen = () => {
+
+        const streamFrame = async () => {
+
+            // Dynamically compensate for timing drift and processing overhead
+            const now = performance.now();
+
+            if (
+                ws.readyState === WebSocket.OPEN &&
+                ws.bufferedAmount === 0
+            ) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob((blob) => {
+                    if (blob) ws.send(blob);
+                }, 'image/jpeg', QUALITY);
             }
-        }, MILLISECONDS); 
-    }; 
-</script>
+
+            // Schedule next frame based on ideal cadence,
+            // not accumulated setInterval drift
+            nextFrameTime += TARGET_FRAME_TIME;
+
+            // If we're lagging badly, resync cleanly
+            if (nextFrameTime < now) {
+                nextFrameTime = now + TARGET_FRAME_TIME;
+            }
+
+            const delay = Math.max(0, nextFrameTime - performance.now());
+
+            setTimeout(streamFrame, delay);
+        };
+
+        streamFrame();
+    };
+    </script>
 </body>
 </html>
