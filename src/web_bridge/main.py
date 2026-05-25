@@ -1,34 +1,40 @@
+import socket
+import os
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
-import uvicorn
-import os
+from starlette.websockets import WebSocketDisconnect
 
 app = FastAPI()
 
-HTML_FILE_PATH = os.path.join(os.path.dirname(__file__), "index.html")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HTML_PATH = os.path.join(BASE_DIR, "index.html")
+
+udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 @app.get("/")
 async def get():
-    with open(HTML_FILE_PATH, "r") as file:
-        html_content = file.read()
-    return HTMLResponse(html_content)
+    try:
+        with open(HTML_PATH, "r") as f:
+            return HTMLResponse(content=f.read(), status_code=200)
+    except FileNotFoundError:
+        with open("/workspace/index.html", "r") as f:
+            return HTMLResponse(content=f.read(), status_code=200)
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("SUCCESS: Browser connected to Docker Backend!")
+    print("WebSocket link established with frontend browser.")
+    
+#    frame_count = 0
     try:
         while True:
-            frame_bytes = await websocket.receive_bytes() # raw JPEG buffer
+            data = await websocket.receive_bytes()
+#            frame_count += 1
             
-            # ros2 publisher here
-
-            print(f"web_input_bridge-1  | Received compressed frame: {len(frame_bytes)} bytes", flush=True)
+            udp_socket.sendto(data, ("127.0.0.1", 9999)) # image -> Node
             
-    except Exception as e:
-        print(e)
-    finally:
-        print("Browser disconnected.")
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+#            if frame_count % 60 == 0:
+#                print(f"[Python Bridge] Forwarded {frame_count} frames. Current size: {len(data)} bytes.")
+                
+    except WebSocketDisconnect:
+        print("Webcam client disconnected from WebSocket.")

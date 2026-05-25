@@ -1,68 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Webcam Bridge</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📷</text></svg>">
+    <title>GGD-SO101 Streamer</title>
+    <style>
+        body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; font-family: sans-serif; }
+        #webcam { display: none; }
+    </style>
 </head>
 <body>
-    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2>
-    <video id="video" width="640" height="480" autoplay></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-    <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const ws = new WebSocket('ws://localhost:8080/ws');
+    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2> 
+    <video id="video" width="640" height="480" autoplay></video> 
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas> 
+	<script> 
+    const video = document.getElementById('video'); 
+    const canvas = document.getElementById('canvas'); 
+    const ctx = canvas.getContext('2d'); 
+    const ws = new WebSocket('ws://localhost:8080/ws'); 
 
-    // 1. Grab webcam feed
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => console.error("Camera access denied!", err));
+    navigator.mediaDevices.getUserMedia({ video: true }) 
+        .then(stream => { video.srcObject = stream; }) 
+        .catch(err => console.error("Camera access denied!", err)); 
 
-    const QUALITY = 0.7;
-    const MILLISECONDS = 33; // Target ~30 FPS
-    let streamTimer = null;
+    const QUALITY = 0.7; 
+    // Hardcoded 30ms to account for ~3.5ms context-switching overhead, target 30fps
+    const MILLISECONDS = 30; 
 
-    // 2. Start streaming only when the WebSocket connects
-    ws.onopen = () => {
-        console.log("Connected to Docker backend!");
-        
-        streamTimer = setInterval(() => {
-            // Safety Guard A: Don't send anything if the socket closed unexpectedly
-            if (ws.readyState !== WebSocket.OPEN) return;
-
-            // Safety Guard B: BACKPRESSURE CONTROL (The Secret Sauce)
-            // If the browser hasn't finished pushing the last frame through the pipe,
-            // drop this frame entirely to prevent network flooding and disconnects.
-            if (ws.bufferedAmount > 0) {
-                console.warn("Network busy: Skipping a frame to prevent crash.");
-                return;
+    ws.onopen = () => { 
+        setInterval(() => { 
+            if (ws.readyState === WebSocket.OPEN && ws.bufferedAmount === 0) { 
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+                canvas.toBlob((blob) => { 
+                    if (blob) ws.send(blob); 
+                }, 'image/jpeg', QUALITY); 
             }
-
-            // Draw frame to hidden canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // OPTIMIZATION: Send as a raw binary Blob instead of a heavy base64 string.
-            // This cuts your network payload size down by roughly 33%!
-            canvas.toBlob((blob) => {
-                if (blob && ws.readyState === WebSocket.OPEN) {
-                    ws.send(blob);
-                }
-            }, 'image/jpeg', QUALITY);
-
-        }, MILLISECONDS);
-    };
-
-    // 3. Clean up cleanly if the connection drops or you close the tab
-    ws.onclose = () => {
-        console.log("WebSocket connection closed. Stopping stream loop.");
-        if (streamTimer) clearInterval(streamTimer);
-    };
-
-    ws.onerror = (error) => {
-        console.error("WebSocket encountered an error:", error);
-    };
-</script>    
+        }, MILLISECONDS); 
+    }; 
+</script>
 </body>
 </html>

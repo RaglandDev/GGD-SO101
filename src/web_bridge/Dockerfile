@@ -1,8 +1,22 @@
-FROM python:3.10-slim
+FROM ros:humble-ros-base
 
-WORKDIR /app
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir fastapi uvicorn websockets opencv-python-headless
+RUN pip3 install fastapi uvicorn websockets
 
-CMD ["python", "main.py"]
+WORKDIR /workspace
+RUN mkdir -p src/ros2_bridge/src
 
+COPY main.py index.html /workspace/
+COPY ros2_bridge/ /workspace/src/ros2_bridge/
+
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --packages-select ros2_bridge
+
+COPY entrypoint.sh /workspace/entrypoint.sh
+
+ENTRYPOINT ["/workspace/entrypoint.sh"]
