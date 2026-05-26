@@ -18,5 +18,6 @@ RUN . /opt/ros/humble/setup.sh && \
     colcon build --packages-select ros2_bridge
 
 COPY entrypoint.sh /workspace/entrypoint.sh
+RUN chmod +x /workspace/entrypoint.sh
 
 ENTRYPOINT ["/workspace/entrypoint.sh"]
