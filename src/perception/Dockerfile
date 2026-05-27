@@ -13,11 +13,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ENV ORT_VERSION=1.17.1
-RUN wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz && \
-    tar -zxvf onnxruntime-linux-x64-${ORT_VERSION}.tgz && \
-    cp -r onnxruntime-linux-x64-${ORT_VERSION}/include/* /usr/local/include/ && \
-    cp -r onnxruntime-linux-x64-${ORT_VERSION}/lib/* /usr/local/lib/ && \
-    rm -rf onnxruntime-linux-x64-${ORT_VERSION}* && \
+
+# dynamically check the hardware architecture (uname -m) to pull x64 or aarch64
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then ORT_ARCH="x64"; \
+    elif [ "$ARCH" = "aarch64" ]; then ORT_ARCH="aarch64"; \
+    else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
+    wget https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}.tgz && \
+    tar -zxvf onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}.tgz && \
+    cp -r onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}/include/* /usr/local/include/ && \
+    cp -r onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}/lib/* /usr/local/lib/ && \
+    rm -rf onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}* && \
     ldconfig
 
 WORKDIR /workspace
@@ -26,7 +32,7 @@ RUN mkdir -p src/ros2_perception/src
 COPY ros2_perception/ /workspace/src/ros2_perception
 
 RUN . /opt/ros/humble/setup.sh && \
-    colcon build --packages-select  ros2_perception
+    colcon build --packages-select ros2_perception
 
 COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh
