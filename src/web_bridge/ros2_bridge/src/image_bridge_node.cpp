@@ -9,9 +9,7 @@
 class ImageBridgeNode : public rclcpp::Node {
 public:
     ImageBridgeNode() : Node("web_input_bridge_node") {
-	constexpr int qos_depth {10};
-        publisher_ = this->create_publisher<sensor_msgs::msg::CompressedImage>(
-            "/human/camera/compressed", qos_depth);
+        publisher_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("/human/camera/compressed", 10);
 
         server_fd_ = socket(AF_INET, SOCK_DGRAM, 0); // udp 
         
