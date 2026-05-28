@@ -1,3 +1,18 @@
+FROM python:3.10-slim AS model_builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    libxcb1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir ultralytics onnx
+
+RUN python3 -c "from ultralytics import YOLO; YOLO('yolov8n-pose.pt').export(format='onnx', imgsz=640)"
+### 
+
 FROM ros:humble-ros-base
 
 RUN apt-get update && apt-get install -y \
@@ -25,6 +40,12 @@ RUN ARCH=$(uname -m) && \
     cp -r onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}/lib/* /usr/local/lib/ && \
     rm -rf onnxruntime-linux-${ORT_ARCH}-${ORT_VERSION}* && \
     ldconfig
+
+# copy model
+RUN mkdir -p /models
+COPY --from=model_builder /build/yolov8n-pose.onnx /models/yolov8n-pose.onnx
+
+###
 
 WORKDIR /workspace
 RUN mkdir -p src/ros2_perception/src
