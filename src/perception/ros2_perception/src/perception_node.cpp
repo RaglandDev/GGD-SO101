@@ -130,7 +130,7 @@ private:
 	    gaze_pose.pose.orientation.x = 0.0;
 	    gaze_pose.pose.orientation.y = 0.0;
 	    gaze_pose.pose.orientation.z = 0.0;
-	    gaze_pose.pose.orientation.w = 0.0;
+	    gaze_pose.pose.orientation.w = 1.0;
 	}
 	
 	gaze_pub_->publish(gaze_pose);
