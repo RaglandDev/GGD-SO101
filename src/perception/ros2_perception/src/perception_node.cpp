@@ -1,10 +1,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/compressed_image.hpp>
-#include <geometry_msgs/msg/vector3.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <cmath>
 
 class PerceptionNode : public rclcpp::Node {
 public:
@@ -14,7 +15,7 @@ public:
 
 	ort_session_ = std::make_unique<Ort::Session>(ort_env_, "/models/yolov8n-pose.onnx", session_options);
 
-	gaze_pub_ = this->create_publisher<geometry_msgs::msg::Vector3>("/human/gaze", 10);
+	gaze_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/human/gaze", 10);
 	gesture_pub_  = this->create_publisher<std_msgs::msg::String>("/human/gesture", 10);
 
 	image_sub_ = this->create_subscription<sensor_msgs::msg::CompressedImage>(
@@ -88,7 +89,10 @@ private:
 	    }
 	}
 	
-	geometry_msgs::msg::Vector3 gaze_msg;
+	geometry_msgs::msg::PoseStamped gaze_pose;
+
+	gaze_pose.header.stamp = this->now();
+	gaze_pose.header.frame_id = "camera_optical_frame";
 
 	// if face found, calc vec
 	if (best_idx >= 0 && max_conf > 0.5f) {
@@ -98,29 +102,43 @@ private:
 	    float left_eye_y = out_data[CH_L_EYE_Y * NUM_ANCHORS + best_idx];
 	    float right_eye_x = out_data[CH_R_EYE_X * NUM_ANCHORS + best_idx];
 	    float right_eye_y = out_data[CH_R_EYE_Y * NUM_ANCHORS + best_idx];
-
-	    // face orientation
 	    float eye_center_x = (left_eye_x + right_eye_x) / 2.0f;
 	    float eye_center_y = (left_eye_y + right_eye_y) / 2.0f;
 
-	    gaze_msg.x = nose_x - eye_center_x;
-	    gaze_msg.y = nose_y - eye_center_y;
-	    gaze_msg.z = 1.0f;
+	    // set origin
+	    gaze_pose.pose.position.x = nose_x;
+	    gaze_pose.pose.position.y = nose_y;
+	    gaze_pose.pose.position.z = 0.0f;
+	
+	    // set orientation
+	    float vec_x = nose_x - eye_center_x;
+	    float vec_y = nose_y - eye_center_y;
+
+	    // angle 
+	    double yaw = std::atan2(vec_y, vec_x);
+
+	    // z-axis rotation -> 3d quat
+	    gaze_pose.pose.orientation.x = 0.0;
+	    gaze_pose.pose.orientation.y = 0.0;
+	    gaze_pose.pose.orientation.z = std::sin(yaw / 2.0);
+	    gaze_pose.pose.orientation.w = std::cos(yaw / 2.0);
+
 	} else {
-	    gaze_msg.x = 0.0f;
-	    gaze_msg.y = 0.0f;
-	    gaze_msg.z = 0.0f;
+	    gaze_pose.pose.position.x = 0.0;
+	    gaze_pose.pose.position.y = 0.0;
+	    gaze_pose.pose.position.z = 0.0;
+	    gaze_pose.pose.orientation.x = 0.0;
+	    gaze_pose.pose.orientation.y = 0.0;
+	    gaze_pose.pose.orientation.z = 0.0;
+	    gaze_pose.pose.orientation.w = 0.0;
 	}
 	
-	RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 500, 
-        "Gaze -> X: %.2f, Y: %.2f, Z: %.2f", gaze_msg.x, gaze_msg.y, gaze_msg.z); //debug
-
-	gaze_pub_->publish(gaze_msg);
+	gaze_pub_->publish(gaze_pose);
 }
 
     Ort::Env ort_env_;
     std::unique_ptr<Ort::Session> ort_session_;
-    rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr gaze_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr gaze_pub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr gesture_pub_;
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr image_sub_;
 };
