@@ -23,5 +23,8 @@
 - `/human/camera/compressed`
 - `/human/gaze_vector`
 
+### Note on Performance
+This architecture is fully containerized for deployment on robotic hardware. When developing on macOS, Docker runs within a Linux Virtual Machine, restricting ONNX to CPU-only execution. For real-time <10ms latency, the container must be deployed to a native Linux host with GPU passthrough (e.g., an Ubuntu workstation or NVIDIA Jetson)."
+
 [^1]: Modern browsers will de-allocate resources from non-active tabs, so you may see a large drop in frame rate if you do not have the webcam tab open.
 

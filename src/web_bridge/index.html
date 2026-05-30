@@ -1,69 +1,20 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>GGD-SO101 Streamer</title>
-    <style>
-        body { margin: 0; background: #222; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; font-family: sans-serif; }
-        #webcam { display: none; }
-    </style>
+    <title>Head Pose</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
-    <h2>Live Camera Stream (Publishing to /human/camera/compressed)</h2>
-    <video id="video" width="640" height="480" autoplay></video>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <button id="toggleBtn">Enable Visualization</button>
 
-    <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const ws = new WebSocket('ws://localhost:8080/ws');
+    <div id="container">
+        <video id="video" width="640" height="480" autoplay></video>
+        <canvas id="overlay" width="640" height="480"></canvas>
+    </div>
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => { video.srcObject = stream; })
-        .catch(err => console.error("Camera access denied!", err));
-
-    const QUALITY = 0.7;
-
-    // Target FPS
-    const TARGET_FPS = 30;
-    const TARGET_FRAME_TIME = 1000 / TARGET_FPS;
-
-    let nextFrameTime = performance.now();
-
-    ws.onopen = () => {
-
-        const streamFrame = async () => {
-
-            // Dynamically compensate for timing drift and processing overhead
-            const now = performance.now();
-
-            if (
-                ws.readyState === WebSocket.OPEN &&
-                ws.bufferedAmount === 0
-            ) {
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                canvas.toBlob((blob) => {
-                    if (blob) ws.send(blob);
-                }, 'image/jpeg', QUALITY);
-            }
-
-            // Schedule next frame based on ideal cadence,
-            // not accumulated setInterval drift
-            nextFrameTime += TARGET_FRAME_TIME;
-
-            // If we're lagging badly, resync cleanly
-            if (nextFrameTime < now) {
-                nextFrameTime = now + TARGET_FRAME_TIME;
-            }
-
-            const delay = Math.max(0, nextFrameTime - performance.now());
-
-            setTimeout(streamFrame, delay);
-        };
-
-        streamFrame();
-    };
-    </script>
+    <script src="/static/script.js"></script>
 </body>
+
 </html>
