@@ -14,7 +14,7 @@
 ## Misc.
 ### Monitor `/human/camera/compressed` fps
 1. `docker compose up --build`
-2. Navigate to http://localhost:8080 in your web browser, accept webcam permissions
+2. Navigate to http://localhost:8080/ in your web browser, accept webcam permissions
 3. `docker exec -it ggd-so101-perception_processor-1 bash`
 4. `source /opt/ros/humble/setup.bash`
 5. `ros2 topic hz /human/camera/compressed`[^1]
