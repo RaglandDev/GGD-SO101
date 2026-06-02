@@ -222,6 +222,30 @@ private:
 
     int best = find_best_anchor(d);
     if (best >= 0) {
+      // ==========================================
+      // NEW GESTURE LOGIC: "Hand Raised"
+      // ==========================================
+      constexpr int NA = 8400;
+      auto get_kpy = [&](int kp) { return d[(5 + kp * 3 + 1) * NA + best]; };
+      auto get_kpv = [&](int kp) { return d[(5 + kp * 3 + 2) * NA + best]; };
+
+      float left_shoulder_y = get_kpy(5);
+      float right_shoulder_y = get_kpy(6);
+
+      bool left_raised =  (get_kpv(9) > 0.35f  && get_kpy(9) < left_shoulder_y);
+      bool right_raised = (get_kpv(10) > 0.35f && get_kpy(10) < right_shoulder_y);
+
+      bool hand_raised = left_raised || right_raised;
+
+      std_msgs::msg::String gesture_msg;
+      gesture_msg.data = hand_raised ? "EXECUTE TRAJECTORIES" : "STANDBY";
+      gesture_pub_->publish(gesture_msg);
+
+      RCLCPP_INFO_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Gesture: %s (L_vis: %.2f, R_vis: %.2f)", 
+          gesture_msg.data.c_str(), get_kpv(9), get_kpv(10));
+      // ==========================================
       std::vector<cv::Point2d> img_pts;
       std::vector<cv::Point3d> obj_pts;
       extract_and_smooth_keypoints(d, best, frame.cols, frame.rows, img_pts, obj_pts);
