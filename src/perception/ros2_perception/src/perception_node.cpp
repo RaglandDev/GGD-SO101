@@ -70,9 +70,13 @@ private:
   }
 
   std::vector<Ort::Value> run_inference(const cv::Mat& frame, cv::Mat& blob) {
-    cv::dnn::blobFromImage(frame, blob, 1.0 / 255.0, cv::Size(640, 640), cv::Scalar(), true, false);
+    constexpr bool bgr_to_rgb {true};
+    constexpr bool center_crop {false};
+    cv::dnn::blobFromImage(frame, blob, 1.0 / 255.0, cv::Size(640, 640), cv::Scalar(), bgr_to_rgb, center_crop);
 
-    std::vector<int64_t> input_shape = {1, 3, 640, 640};
+    constexpr int batch_size {1};
+    constexpr int color_channels {3};
+    std::vector<int64_t> input_shape = {batch_size, color_channels, 640, 640};
     auto mem = Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU);
     Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
         mem, reinterpret_cast<float *>(blob.data), blob.total(), input_shape.data(), input_shape.size());
