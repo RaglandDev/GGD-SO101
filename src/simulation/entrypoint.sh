@@ -15,44 +15,7 @@ XVFB_PID=$!
 # Wait for Xvfb to initialize
 sleep 2
 
-# Create a basic empty world WITHOUT textures.
-# Textures often fail to load headlessly, causing black screens.
-# We use basic colored geometry and a DirectionalLight instead.
 WORLD_PATH="/ros2_ws/src/simulation/ggd_world.wbt"
-if [ ! -f "$WORLD_PATH" ]; then
-    echo "World file not found at $WORLD_PATH. Generating a default empty world..."
-    mkdir -p $(dirname "$WORLD_PATH")
-    cat << 'EOF' > "$WORLD_PATH"
-#VRML_SIM R2023b utf8
-WorldInfo {
-}
-Viewpoint {
-  orientation -0.15 0.9 0.4 1.1
-  position 2.5 1.5 2.5
-}
-DirectionalLight {
-  direction -0.5 -1 -0.5
-  intensity 2
-}
-Background {
-  skyColor [ 0.4 0.7 1 ]
-}
-Solid {
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0.8 0.8 0.8
-        roughness 1
-        metalness 0
-      }
-      geometry Plane {
-        size 10 10
-      }
-    }
-  ]
-}
-EOF
-fi
 
 echo "Starting Webots simulation on port 1234..."
 
