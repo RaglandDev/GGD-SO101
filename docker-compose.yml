@@ -24,15 +24,18 @@ services:
       - web_input_bridge
 
   simulation_control:
+    platform: linux/amd64    
     build: 
       context: ./src/simulation
     ports:
-      - "1234:1234" # Open for Webots WebGL Streaming
-      - "5001:5000" # Open for Reachy's POV stream loopback
+      - "1234:1234"
+      - "5001:5000"
     networks:
       - shared_autonomy_net
     volumes:
       - ./src/simulation:/ros2_ws/src/simulation
+    # CRITICAL: Required for 3D software rendering (Webots + Xvfb)
+    shm_size: '2gb' 
 
   triage_supervisor:
     build: 

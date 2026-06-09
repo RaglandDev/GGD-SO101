@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir ultralytics onnx
 
 RUN python3 -c "from ultralytics import YOLO; YOLO('yolov8n-pose.pt').export(format='onnx', imgsz=640)"
-### 
 
 FROM ros:humble-ros-base
 
@@ -59,3 +58,4 @@ COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh
 
 ENTRYPOINT ["/workspace/entrypoint.sh"]
+

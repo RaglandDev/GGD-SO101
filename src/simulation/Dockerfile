@@ -33,5 +33,6 @@ COPY entrypoint.sh /ros2_ws/entrypoint.sh
 RUN chmod +x /ros2_ws/entrypoint.sh
 
 EXPOSE 1234
+EXPOSE 5000
 
 ENTRYPOINT ["/ros2_ws/entrypoint.sh"]

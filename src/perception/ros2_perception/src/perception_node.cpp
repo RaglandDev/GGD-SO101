@@ -238,7 +238,7 @@ private:
       bool hand_raised = left_raised || right_raised;
 
       std_msgs::msg::String gesture_msg;
-      gesture_msg.data = hand_raised ? "EXECUTE TRAJECTORIES" : "STANDBY";
+      gesture_msg.data = hand_raised ? "HAND_RAISED" : "DEFAULT";
       gesture_pub_->publish(gesture_msg);
 
       RCLCPP_INFO_THROTTLE(

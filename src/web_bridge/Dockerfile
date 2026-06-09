@@ -20,4 +20,7 @@ RUN . /opt/ros/humble/setup.sh && \
 COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh
 
+EXPOSE 8080
+EXPOSE 9998/udp
+
 ENTRYPOINT ["/workspace/entrypoint.sh"]
