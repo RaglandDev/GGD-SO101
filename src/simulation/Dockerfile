@@ -27,12 +27,6 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     && rm -rf /var/lib/apt/lists/*
 
-ENV QTWEBENGINE_DISABLE_SANDBOX=1
-ENV QT_X11_NO_MITSHM=1
-ENV LIBGL_ALWAYS_SOFTWARE=1
-ENV GALLIUM_DRIVER=llvmpipe
-ENV WEBOTS_HOME=/usr/local/webots
-
 WORKDIR /ros2_ws
 
 COPY entrypoint.sh /ros2_ws/entrypoint.sh
